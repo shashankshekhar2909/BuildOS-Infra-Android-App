@@ -48,6 +48,7 @@ import com.example.ui.viewmodel.InfraViewModel
 @Composable
 fun LoginScreen(
     viewModel: InfraViewModel,
+    onDismiss: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var usernameVal by remember { mutableStateOf("") }
@@ -305,7 +306,7 @@ fun LoginScreen(
 
                     // Submit Trigger
                     Button(
-                        onClick = { viewModel.login(usernameVal, passwordVal, selectedRole) {} },
+                        onClick = { viewModel.login(usernameVal, passwordVal, selectedRole) { onDismiss?.invoke() } },
                         enabled = !isLoading && usernameVal.isNotEmpty() && passwordVal.isNotEmpty(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = ThemePrimary,
@@ -328,6 +329,31 @@ fun LoginScreen(
                                     color = ThemeOnPrimary,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 13.sp,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
+
+                    if (onDismiss != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = { onDismiss.invoke() },
+                            border = BorderStroke(1.dp, ThemeOnSurface.copy(alpha = 0.3f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .testTag("cancel_login_button"),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ThemeOnBackground)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Close, contentDescription = "Cancel", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    "CANCEL // DETACH SECURE MODE",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace
                                 )
                             }
@@ -459,6 +485,8 @@ fun DashboardScreen(
     viewModel: InfraViewModel,
     onMoveToTab: (Int) -> Unit
 ) {
+    val token by viewModel.token.collectAsState()
+    val baseUrl by viewModel.baseUrl.collectAsState()
     val nodes by viewModel.nodes.collectAsState()
     val containers by viewModel.containers.collectAsState()
     val logs by viewModel.logs.collectAsState()
@@ -471,6 +499,12 @@ fun DashboardScreen(
 
     val runningContainers = containers.count { it.state == "running" }
     val stoppedContainers = containers.count { it.state == "stopped" }
+
+    var domainInput by remember { mutableStateOf(baseUrl) }
+    var verifId by remember { mutableStateOf("") }
+    var verifPass by remember { mutableStateOf("") }
+    var verifRole by remember { mutableStateOf("admin") }
+    var verifIdPassPromptVisible by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -554,6 +588,162 @@ fun DashboardScreen(
                                 color = ThemePrimary,
                                 fontFamily = FontFamily.Monospace
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (token == null) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = ThemeSurface),
+                    border = BorderStroke(1.dp, ThemeSecondary.copy(alpha = 0.8f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CloudQueue, contentDescription = "Unlinked", tint = ThemeSecondary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "SECURE WEB ROUTING GATEWAY",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ThemeSecondary,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            "App is currently running in local unlinked guest mode (no dummy data). Enter your BuildOS instance domain to verify and link realtime data.",
+                            fontSize = 11.sp,
+                            color = ThemeOnSurface
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        OutlinedTextField(
+                            value = domainInput,
+                            onValueChange = { domainInput = it },
+                            label = { Text("HOST DOMAIN / BASE ENDPOINT URL", fontFamily = FontFamily.Monospace, fontSize = 10.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ThemeSecondary,
+                                unfocusedBorderColor = ThemeGridBorder,
+                                focusedTextColor = ThemeOnBackground,
+                                unfocusedTextColor = ThemeOnBackground
+                            ),
+                            textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = {
+                                if (domainInput.isNotBlank()) {
+                                    viewModel.saveBaseUrl(domainInput)
+                                    verifIdPassPromptVisible = true
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = ThemeSecondary),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                "LINK DOMAIN & TRIGGER VERIFICATION",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+
+                        if (verifIdPassPromptVisible) {
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            HorizontalDivider(color = ThemeGridBorder, thickness = 1.dp)
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = ThemeBackground),
+                                border = BorderStroke(1.dp, ThemeGridBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.VpnKey, contentDescription = "Credentials Required", tint = ThemePrimary, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            "🔐 PROVIDE SECURITY CREDENTIALS TO VERIFY",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = ThemePrimary,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+
+                                    Text(
+                                        "To establish decryption links with '$domainInput' and verify ownership, please provide your Admin ID and passcode below.",
+                                        fontSize = 10.sp,
+                                        color = ThemeOnSurface
+                                    )
+
+                                    OutlinedTextField(
+                                        value = verifId,
+                                        onValueChange = { verifId = it },
+                                        label = { Text("OPERATOR ID / USERNAME", fontFamily = FontFamily.Monospace, fontSize = 9.sp) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = ThemePrimary,
+                                            unfocusedBorderColor = ThemeGridBorder,
+                                            focusedTextColor = ThemeOnBackground,
+                                            unfocusedTextColor = ThemeOnBackground
+                                        ),
+                                        textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                                    )
+
+                                    OutlinedTextField(
+                                        value = verifPass,
+                                        onValueChange = { verifPass = it },
+                                        label = { Text("OPERATOR SECURE PASSCODE", fontFamily = FontFamily.Monospace, fontSize = 9.sp) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        visualTransformation = PasswordVisualTransformation(),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = ThemePrimary,
+                                            unfocusedBorderColor = ThemeGridBorder,
+                                            focusedTextColor = ThemeOnBackground,
+                                            unfocusedTextColor = ThemeOnBackground
+                                        ),
+                                        textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+                                    )
+
+                                    Button(
+                                        onClick = {
+                                            if (verifId.isNotBlank() && verifPass.isNotBlank()) {
+                                                viewModel.login(verifId, verifPass, "admin") {}
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = ThemePrimary),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            "ESTABLISH ACCESS LINK & VIEW REALTIME DATA",
+                                            color = ThemeOnPrimary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

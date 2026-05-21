@@ -36,7 +36,7 @@ class SessionManager(private val context: Context) {
     }
 
     val demoModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[DEMO_MODE] ?: true // default to true so users see a fully loaded interactive experience on first launch, but can switch!
+        preferences[DEMO_MODE] ?: false // default to false so users see real-time data from the backend by default!
     }
 
     suspend fun saveSession(token: String, username: String, role: String) {

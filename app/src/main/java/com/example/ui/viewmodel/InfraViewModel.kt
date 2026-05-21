@@ -27,7 +27,7 @@ class InfraViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5000), "https://os.buildwithshashank.com"
     )
     val demoMode: StateFlow<Boolean> = sessionManager.demoModeFlow.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), true
+        viewModelScope, SharingStarted.WhileSubscribed(5000), false
     )
 
     // --- State values
