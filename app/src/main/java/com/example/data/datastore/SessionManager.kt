@@ -32,7 +32,7 @@ class SessionManager(private val context: Context) {
     }
 
     val userRoleFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[USERNAME]?.let { preferences[USER_ROLE] ?: "viewer" }
+        preferences[USER_ROLE] ?: "viewer"
     }
 
     val demoModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->

@@ -13,8 +13,8 @@ data class LoginRequest(
 @JsonClass(generateAdapter = true)
 data class LoginResponse(
     val token: String,
-    val username: String,
-    val role: String
+    val username: String = "",
+    val role: String = "viewer"
 )
 
 @JsonClass(generateAdapter = true)
@@ -135,3 +135,11 @@ data class LiveDnsRecord(
     val data: String
 )
 
+@JsonClass(generateAdapter = true)
+data class BackendHealth(
+    val status: String = "unknown",
+    val version: String? = null,
+    @Json(name = "supported_features") val supportedFeatures: List<String> = emptyList(),
+    @Json(name = "websocket_enabled") val websocketEnabled: Boolean? = null,
+    val message: String? = null
+)

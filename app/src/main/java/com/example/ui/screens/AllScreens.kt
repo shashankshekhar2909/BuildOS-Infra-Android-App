@@ -492,6 +492,10 @@ fun DashboardScreen(
     val logs by viewModel.logs.collectAsState()
     val lockdownActive by viewModel.lockdownActive.collectAsState()
     val zones by viewModel.zones.collectAsState()
+    val backendHealth by viewModel.backendHealth.collectAsState()
+    val lastSyncAt by viewModel.lastSyncAt.collectAsState()
+    val syncMode by viewModel.syncMode.collectAsState()
+    val healthError by viewModel.healthError.collectAsState()
 
     val onlineNodes = nodes.count { it.status == "online" }
     val warningNodes = nodes.count { it.status == "warning" }
@@ -589,6 +593,69 @@ fun DashboardScreen(
                                 fontFamily = FontFamily.Monospace
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        item {
+            val healthStatus = backendHealth?.status ?: "unknown"
+            val healthColor = when {
+                healthStatus.equals("ok", ignoreCase = true) -> ThemePrimary
+                healthStatus.equals("degraded", ignoreCase = true) -> ThemeTertiary
+                healthStatus.equals("down", ignoreCase = true) -> ThemeError
+                else -> ThemeSecondary
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = ThemeSurface),
+                border = BorderStroke(1.dp, ThemeGridBorder),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "BACKEND LINK STATUS",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ThemeOnSurface,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(healthColor.copy(alpha = 0.15f), RoundedCornerShape(3.dp))
+                                .border(1.dp, healthColor, RoundedCornerShape(3.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                healthStatus.uppercase(),
+                                color = healthColor,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+                    Text(
+                        text = backendHealth?.version?.let { "Version $it" } ?: "Version unknown",
+                        fontSize = 11.sp,
+                        color = ThemeOnBackground,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    Text(
+                        text = "Sync: ${syncMode.uppercase()}  Last: ${lastSyncAt ?: "n/a"}",
+                        fontSize = 10.sp,
+                        color = ThemeOnSurface,
+                        fontFamily = FontFamily.Monospace
+                    )
+                    if (healthError != null) {
+                        Text(
+                            text = healthError ?: "",
+                            fontSize = 10.sp,
+                            color = ThemeError,
+                            fontFamily = FontFamily.Monospace
+                        )
                     }
                 }
             }
@@ -2590,6 +2657,9 @@ fun SettingsScreen(
     val username by viewModel.username.collectAsState()
     val userRole by viewModel.userRole.collectAsState()
     val isDemoMode by viewModel.demoMode.collectAsState()
+    val backendHealth by viewModel.backendHealth.collectAsState()
+    val lastSyncAt by viewModel.lastSyncAt.collectAsState()
+    val healthError by viewModel.healthError.collectAsState()
 
     var customUrlInput by remember { mutableStateOf(baseUrl) }
     val context = LocalContext.current
@@ -2634,6 +2704,20 @@ fun SettingsScreen(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("DECENTRALIZED ENGEN TESTING", fontSize = 11.sp, color = ThemeOnSurface)
                     Text(if (isDemoMode) "SANDBOX COMPATIBLE" else "REAL PROD ACTIVE", fontSize = 11.sp, color = ThemePrimary, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("BACKEND HEALTH", fontSize = 11.sp, color = ThemeOnSurface)
+                    Text(backendHealth?.status?.uppercase() ?: "UNKNOWN", fontSize = 11.sp, color = ThemePrimary, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("LAST SYNC", fontSize = 11.sp, color = ThemeOnSurface)
+                    Text(lastSyncAt ?: "n/a", fontSize = 11.sp, color = ThemeOnBackground, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
+                }
+
+                if (healthError != null) {
+                    Text(healthError ?: "", fontSize = 10.sp, color = ThemeError, fontFamily = FontFamily.Monospace)
                 }
             }
         }
