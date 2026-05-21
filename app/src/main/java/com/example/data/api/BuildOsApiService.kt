@@ -6,9 +6,6 @@ import retrofit2.http.*
 
 interface BuildOsApiService {
 
-    @GET("api/health")
-    suspend fun getHealth(): Response<BackendHealth>
-
     @POST("api/auth/login")
     suspend fun login(
         @Body request: LoginRequest

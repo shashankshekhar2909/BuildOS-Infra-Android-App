@@ -7,12 +7,6 @@ import com.example.data.model.*
 import com.example.data.repository.InfraRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class InfraViewModel(
     private val repository: InfraRepository,
@@ -43,18 +37,6 @@ class InfraViewModel(
     val dnsRecords: StateFlow<Map<String, List<DnsRecord>>> = repository.dnsRecords
     val logs: StateFlow<List<SystemLog>> = repository.logs
     val lockdownActive: StateFlow<Boolean> = repository.lockdownActive
-
-    private val _backendHealth = MutableStateFlow<BackendHealth?>(null)
-    val backendHealth: StateFlow<BackendHealth?> = _backendHealth.asStateFlow()
-
-    private val _lastSyncAt = MutableStateFlow<String?>(null)
-    val lastSyncAt: StateFlow<String?> = _lastSyncAt.asStateFlow()
-
-    private val _syncMode = MutableStateFlow("idle")
-    val syncMode: StateFlow<String> = _syncMode.asStateFlow()
-
-    private val _healthError = MutableStateFlow<String?>(null)
-    val healthError: StateFlow<String?> = _healthError.asStateFlow()
 
     // UI Loading & Toast states
     private val _isLoading = MutableStateFlow(false)
@@ -90,11 +72,9 @@ class InfraViewModel(
     private val _liveDnsError = MutableStateFlow<String?>(null)
     val liveDnsError: StateFlow<String?> = _liveDnsError.asStateFlow()
 
-    private var backgroundSyncJob: Job? = null
-    private val syncTimeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
-
     init {
-        startBackgroundSync()
+        // Initial fetch of fleet assets
+        refreshAll()
     }
 
     fun selectZone(zoneId: String) {
@@ -114,97 +94,36 @@ class InfraViewModel(
         _toastMessage.value = null
     }
 
-    fun refreshAll(background: Boolean = false, forceFleetData: Boolean = false) {
+    fun refreshAll() {
         viewModelScope.launch {
-            if (!background) {
-                _isLoading.value = true
-            }
+            _isLoading.value = true
             _errorMessage.value = null
             try {
-                val canAccessFleetData = forceFleetData || !token.value.isNullOrBlank() || demoMode.value
+                repository.fetchNodes()
+                repository.fetchContainers()
+                repository.fetchZones()
+                repository.fetchLogs()
 
-                val healthResult = repository.checkBackendHealth()
-                healthResult.onSuccess {
-                    _backendHealth.value = it
-                    _healthError.value = null
-                }.onFailure {
-                    _healthError.value = it.message ?: "Backend health probe failed"
+                // Prefetch dns records for current zone
+                if (_selectedZoneId.value.isNotEmpty()) {
+                    repository.fetchDnsRecords(_selectedZoneId.value)
                 }
 
-                if (canAccessFleetData) {
-                    val nodeResult = repository.fetchNodes()
-                    val containerResult = repository.fetchContainers()
-                    val zoneResult = repository.fetchZones()
-                    val logResult = repository.fetchLogs()
-
-                    val failures = mutableListOf<String>()
-                    nodeResult.exceptionOrNull()?.let { failures += "nodes: ${it.message}" }
-                    containerResult.exceptionOrNull()?.let { failures += "containers: ${it.message}" }
-                    zoneResult.exceptionOrNull()?.let { failures += "zones: ${it.message}" }
-                    logResult.exceptionOrNull()?.let { failures += "logs: ${it.message}" }
-
-                    // Prefetch dns records for current zone
-                    if (_selectedZoneId.value.isNotEmpty()) {
-                        repository.fetchDnsRecords(_selectedZoneId.value)
-                    }
-
-                    // Prefetch Proxmox guests for any nodes of type PROXMOX
-                    nodes.value.forEach { node ->
-                        if (node.type == "PROXMOX") {
-                            val res = repository.fetchProxmoxGuestsRemote(node.id)
-                            res.onSuccess { guests ->
-                                _nodeGuests.value = _nodeGuests.value + (node.id to guests)
-                            }
+                // Prefetch Proxmox guests for any nodes of type PROXMOX
+                nodes.value.forEach { node ->
+                    if (node.type == "PROXMOX") {
+                        val res = repository.fetchProxmoxGuestsRemote(node.id)
+                        res.onSuccess { guests ->
+                            _nodeGuests.value = _nodeGuests.value + (node.id to guests)
                         }
                     }
-
-                    if (failures.isNotEmpty() && !background) {
-                        _errorMessage.value = failures.joinToString(" | ")
-                    }
                 }
-
-                _lastSyncAt.value = syncTimeFormat.format(Date())
             } catch (e: Exception) {
-                if (!background) {
-                    _errorMessage.value = "Failed sync: ${e.message}"
-                } else {
-                    _healthError.value = e.message ?: "Background sync failed"
-                }
+                _errorMessage.value = "Failed sync: ${e.message}"
             } finally {
-                if (!background) {
-                    _isLoading.value = false
-                }
+                _isLoading.value = false
             }
         }
-    }
-
-    private fun startBackgroundSync() {
-        if (backgroundSyncJob != null) return
-        backgroundSyncJob = viewModelScope.launch {
-            while (isActive) {
-                val canSyncFleetData = !token.value.isNullOrBlank() || demoMode.value
-                _syncMode.value = if (canSyncFleetData) "polling" else "health-only"
-                if (canSyncFleetData) {
-                    refreshAll(background = true)
-                } else {
-                    val healthResult = repository.checkBackendHealth()
-                    healthResult.onSuccess {
-                        _backendHealth.value = it
-                        _healthError.value = null
-                    }.onFailure {
-                        _healthError.value = it.message ?: "Backend health probe failed"
-                    }
-                    _lastSyncAt.value = syncTimeFormat.format(Date())
-                }
-                delay(30_000)
-            }
-        }
-    }
-
-    fun stopBackgroundSync() {
-        backgroundSyncJob?.cancel()
-        backgroundSyncJob = null
-        _syncMode.value = "paused"
     }
 
     // Login Action
@@ -215,7 +134,7 @@ class InfraViewModel(
             val result = repository.login(LoginRequest(usernameInput, passwordInput, roleInput))
             result.onSuccess {
                 _toastMessage.value = "Authenticated successfully as '$roleInput'"
-                refreshAll(forceFleetData = true)
+                refreshAll()
                 onNavigate()
             }.onFailure {
                 _errorMessage.value = it.message ?: "Authentication failed."
@@ -240,7 +159,7 @@ class InfraViewModel(
             sessionManager.saveDemoMode(enabled)
             repository.resetSandboxData()
             _toastMessage.value = if (enabled) "Demo Mode Engine Enabled" else "Real Network API Enabled"
-            refreshAll(forceFleetData = enabled)
+            refreshAll()
         }
     }
 
@@ -473,10 +392,5 @@ class InfraViewModel(
         _liveDnsResults.value = emptyList()
         _liveDnsError.value = null
         _liveDnsQuery.value = ""
-    }
-
-    override fun onCleared() {
-        stopBackgroundSync()
-        super.onCleared()
     }
 }

@@ -74,13 +74,9 @@ class InfraRepository(private val sessionManager: SessionManager) {
         _logs.value = listOf(newLog) + _logs.value.take(49) // limit to recent 50
     }
 
-    private fun backendBaseUrl(): String {
-        return sessionManager.baseUrlFlow.first().removeSuffix("/") + "/"
-    }
-
     // Dynamic creator for client instances matching current base URL config.
     private suspend fun getApiService(): Pair<BuildOsApiService, String> {
-        val url = backendBaseUrl()
+        val url = sessionManager.baseUrlFlow.first().removeSuffix("/") + "/"
         val token = sessionManager.tokenFlow.first() ?: ""
         val client = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().apply {
@@ -119,31 +115,6 @@ class InfraRepository(private val sessionManager: SessionManager) {
                 Result.success(body)
             } else {
                 Result.failure(Exception("Login failed: ${response.message()} (${response.code()})"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun checkBackendHealth(): Result<BackendHealth> {
-        return try {
-            val retrofit = Retrofit.Builder()
-                .baseUrl(backendBaseUrl())
-                .client(
-                    OkHttpClient.Builder()
-                        .addInterceptor(HttpLoggingInterceptor().apply {
-                            level = HttpLoggingInterceptor.Level.BODY
-                        })
-                        .build()
-                )
-                .addConverterFactory(MoshiConverterFactory.create())
-                .build()
-            val service = retrofit.create(BuildOsApiService::class.java)
-            val response = service.getHealth()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Health check failed: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

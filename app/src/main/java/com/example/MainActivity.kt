@@ -65,6 +65,13 @@ class MainActivity : ComponentActivity() {
                 var showSpecialSettingsView by remember { mutableStateOf(false) }
                 var showLoginOverlay by remember { mutableStateOf(false) }
 
+                // Automatically trigger config/verification overlay if unlinked / logged out
+                LaunchedEffect(token) {
+                    if (token == null) {
+                        showLoginOverlay = true
+                    }
+                }
+
                 // Dynamic Toast system handler
                 LaunchedEffect(toastMsg) {
                     toastMsg?.let {
@@ -73,28 +80,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                if (showLoginOverlay) {
-                    androidx.compose.ui.window.Dialog(
-                        onDismissRequest = { showLoginOverlay = false },
-                        properties = androidx.compose.ui.window.DialogProperties(
-                            usePlatformDefaultWidth = false
-                        )
-                    ) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = ThemeBackground
-                        ) {
-                            LoginScreen(
-                                viewModel = viewModel,
-                                onDismiss = { showLoginOverlay = false },
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
-                }
-
-                // Mainframe Secure Console Environment with high-density header
-                Scaffold(
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Mainframe Secure Console Environment with high-density header
+                    Scaffold(
                     topBar = {
                         Surface(
                             color = ThemeBackground,
@@ -391,6 +379,25 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                // Secure Dialog-free overlay sheet
+                    AnimatedVisibility(
+                        visible = showLoginOverlay,
+                        enter = fadeIn(animationSpec = tween(250)) + slideInVertically(initialOffsetY = { it / 2 }),
+                        exit = fadeOut(animationSpec = tween(200)) + slideOutVertically(targetOffsetY = { it / 2 })
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = ThemeBackground
+                        ) {
+                            LoginScreen(
+                                viewModel = viewModel,
+                                onDismiss = { showLoginOverlay = false },
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                     }
                 }

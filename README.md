@@ -1,59 +1,21 @@
-# BuildOS Infra
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-Android Compose console for BuildOS fleet ops.
+# Run and deploy your AI Studio app
 
-The app handles:
-- login and session storage
-- node inventory
-- container control
-- Cloudflare zones and DNS records
-- Proxmox guest control
-- emergency lockdown / reset
-- live DNS lookup via Google resolver
-- demo mode sandbox state
+This contains everything you need to run your app locally.
 
-## Structure
-
-- `app/src/main/java/com/example/MainActivity.kt` wires the UI and view model.
-- `app/src/main/java/com/example/data/datastore/SessionManager.kt` stores token, base URL, username, role, and demo mode.
-- `app/src/main/java/com/example/data/repository/InfraRepository.kt` owns API calls and demo sandbox state.
-- `app/src/main/java/com/example/ui/viewmodel/InfraViewModel.kt` coordinates UI state and actions.
-- `app/src/main/java/com/example/ui/screens/AllScreens.kt` contains the Compose screens.
-- `app/src/main/java/com/example/ui/theme/*` defines the dark industrial theme.
-
-## Build Notes
-
-- `namespace`: `com.example`
-- `applicationId`: `com.aistudio.buildosinfra.bdoinf`
-- `compileSdk`: `36.1`
-- `minSdk`: `24`
-- theme: `Theme.MyApplication`
-- default backend: `https://os.buildwithshashank.com`
-- demo mode defaults off
-- startup probes `GET /api/health`
-- authenticated sessions poll fleet state in the background
+View your app in AI Studio: https://ai.studio/apps/60df6297-4025-4800-9d24-52d93975b4db
 
 ## Run Locally
 
-Prerequisite: Android Studio.
+**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
 
-1. Open the project in Android Studio.
-2. Let Gradle sync and accept any import fixes.
-3. Create `.env` in the repo root if you need local secrets. Use `.env.example` as the template.
-4. Set `GEMINI_API_KEY` only if your environment or downstream features need it.
-5. Run the `app` configuration on an emulator or physical device.
 
-## Notes
-
-- Debug signing config is already present in `app/build.gradle.kts`.
-- The app shows a guest state until a token is saved.
-- Live mode hits the configured base URL.
-- Backend health and last sync time are shown in the app UI.
-- Demo mode uses in-memory sandbox data and can seed live DNS lookups.
-
-## Tests
-
-- Local unit tests: `app/src/test`
-- Robolectric tests: `app/src/test`
-- Instrumented tests: `app/src/androidTest`
-- Screenshot tests use Roborazzi
+1. Open Android Studio
+2. Select **Open** and choose the directory containing this project
+3. Allow Android Studio to fix any incompatibilities as it imports the project.
+4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
+5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
+6. Run the app on an emulator or physical device
