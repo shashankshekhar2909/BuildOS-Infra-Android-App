@@ -1,0 +1,55 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Cyber Ring -->
+    <path
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M 54 22 A 32 32 0 1 1 53.9 22 Z" />
+
+    <!-- Thin Cyber Orbit Inner Ring -->
+    <path
+        android:strokeColor="#50818CF8"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M 54 28 A 26 26 0 1 1 53.9 28 Z" />
+
+    <!-- Inner Core Server Towers -->
+    <!-- Tower 1: Left -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,44 h14 v6 h-14 z M38,53 h14 v6 h-14 z M38,62 h14 v6 h-14 z" />
+    
+    <!-- Tower 2: Right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M56,44 h14 v6 h-14 z M56,53 h14 v6 h-14 z M56,62 h14 v6 h-14 z" />
+
+    <!-- Active Indicator LEDs on left tower -->
+    <path
+        android:fillColor="#22D3EE"
+        android:pathData="M40,47 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0 M40,56 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0 M40,65 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0" />
+    <!-- Active Indicator LEDs on right tower -->
+    <path
+        android:fillColor="#22D3EE"
+        android:pathData="M58,47 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0 M58,56 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0 M58,65 a1,1 0 1 0 2,0 a1,1 0 1 0 -2,0" />
+
+    <!-- Router antenna nodes linking the stack -->
+    <path
+        android:strokeColor="#22D3EE"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M45,44 L45,38 L54,34 L63,38 L63,44" />
+
+    <!-- Beacon transmitter dome -->
+    <path
+        android:fillColor="#818CF8"
+        android:pathData="M54,31 a3,3 0 1 0 0.1,0 z" />
+</vector>
