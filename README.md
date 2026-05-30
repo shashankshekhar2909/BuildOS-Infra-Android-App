@@ -20,7 +20,7 @@ The app handles:
 - Backend health and last sync time are shown in the UI.
 - Demo mode uses in-memory sandbox data.
 - Live DNS lookups are real HTTP queries to Google DNS.
-- No client-side Gemini API key is required by the Android app.
+- No client-side AI key is required by the Android app.
 
 ## Structure
 

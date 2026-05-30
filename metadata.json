@@ -1,6 +1,5 @@
 {
   "name": "BuildOS Infra",
   "description": "Mobile management console for BuildOS Infra fleet, containers, domains, and systems health.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }
